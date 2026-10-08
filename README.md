@@ -26,6 +26,11 @@ festivos: [BDFestivos.mjs](primera-entrega/BDFestivos.mjs)
 
 Modelado de la **API Calendario** con arquitectura onion. Carpeta [segunda-entrega](segunda-entrega/).
 
+La API es cliente de la API Festivos: obtiene la lista de festivos de un año y con ella
+genera y almacena la clasificación de cada día del año (día laboral, fin de semana o día
+festivo). Expone dos operaciones: `GET /api/calendario/generar/{anio}` y
+`GET /api/calendario/listar/{anio}`.
+
 | Diagrama | Archivo |
 |---|---|
 | Diagrama relacional del modelo de datos | [diagrama-relacional-api-calendario.md](segunda-entrega/diagrama-relacional-api-calendario.md) |
