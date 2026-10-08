@@ -11,8 +11,9 @@ ninguna sale de ellos.
 
 En el diagrama, cada módulo está dentro del anillo al que pertenece: el dominio dentro del
 core, el core dentro de la aplicación, y la infraestructura y la presentación en el anillo
-exterior. La base de datos y la API Festivos quedan por fuera de la cebolla porque son
-sistemas externos, no módulos de la API.
+exterior. El cliente, la base de datos y la API Festivos quedan por fuera de la cebolla
+porque no son módulos de la API: el cliente la consume, y la infraestructura se comunica
+con la base de datos y con la API Festivos.
 
 ```mermaid
 graph TD
@@ -57,11 +58,16 @@ graph TD
         end
     end
 
-    %% Sistemas externos, fuera de la cebolla
-    subgraph Externos [Sistemas externos]
+    %% Fuera de la API: cliente y sistemas externos
+    subgraph Externos [Fuera de la API]
+        Cliente[Cliente<br/><i>Postman / Swagger UI</i>]
         DB[(Base de Datos: PostgreSQL)]
         APIExterna[API Festivos]
     end
+
+    %% Cliente -> Presentación
+    Cliente -->|"GET /api/calendario/generar/{anio}"| Controladores
+    Cliente -->|"GET /api/calendario/listar/{anio}"| Controladores
 
     %% Relaciones Aplicación -> Core / Dominio
     ServiciosApp -.->|Implementa| InterfacesServicio
@@ -81,7 +87,7 @@ graph TD
     IntegracionExt -->|Crea| DTOs
 
     %% Relaciones Infraestructura -> Sistemas externos
-    IntegracionExt -->|RestTemplate / GET| APIExterna
+    IntegracionExt -->|"RestTemplate / GET /api/festivos/obtener/{anio}"| APIExterna
     RepositoriosJPA -->|Spring Data JPA / SQL| DB
     EntidadesJPA -->|Mapeo ORM @Entity| DB
 
@@ -107,6 +113,7 @@ graph TD
 
 | Relación | Línea | Significado |
 |---|---|---|
+| GET con una ruta | continua | Petición HTTP: del cliente al controlador, y de la integración a la API Festivos. La respuesta recorre el camino inverso |
 | Implementa | punteada | La clase implementa una interfaz definida en el core. No es un llamado directo |
 | Inyecta | continua | La clase recibe por inyección de dependencias una instancia que crea Spring (`@Autowired`) |
 | Maneja / Usa | continua | La clase trabaja con objetos del dominio o DTOs, que fluyen por todos los módulos |
@@ -115,8 +122,10 @@ graph TD
 | Crea | continua | `FestivoServicioExterno` convierte el JSON de la API Festivos en objetos `FestivoDto` |
 | Arranca, Documenta, Intercepta, Responde con | continua | Relaciones internas de la presentación: arranque de Spring, documentación con Swagger y manejo de errores |
 
-Del dominio y del core no sale ninguna flecha, así que la base de datos o la API Festivos
-se pueden reemplazar sin cambiar el núcleo ni la lógica de negocio.
+Ninguna flecha sale del dominio ni del core hacia los anillos exteriores: el core solo
+conoce al dominio (sus interfaces usan `Calendario`, `Tipo` y `FestivoDto`) y el dominio
+no conoce a nadie. Por eso la base de datos o la API Festivos se pueden reemplazar sin
+cambiar el núcleo ni la lógica de negocio.
 
 ## Módulos
 
@@ -148,24 +157,27 @@ Generar usa `GET`, como en la solicitud de ejemplo del enunciado, aunque guarda 
 2. `CalendarioControlador` invoca `ICalendarioServicio`. Spring inyecta la implementación
    `CalendarioServicio`.
 3. `CalendarioServicio` pide los festivos del año a `IFestivoServicioExterno`. Su
-   implementación, `FestivoServicioExterno`, llama `GET /api/festivos/obtener/:anio` de la
+   implementación, `FestivoServicioExterno`, llama `GET /api/festivos/obtener/{anio}` de la
    API Festivos con el `RestTemplate` configurado en `HttpServicio` y convierte el JSON
    recibido en objetos `FestivoDto`.
-4. `CalendarioServicio` recorre los días del 1 de enero al 31 de diciembre y clasifica cada
+4. `CalendarioServicio` lee de `ITipoRepositorio` los tres tipos del catálogo (*Día
+   laboral*, *Fin de semana* y *Día festivo*), para asignar a cada día un objeto `Tipo`.
+5. `CalendarioServicio` recorre los días del 1 de enero al 31 de diciembre y clasifica cada
    uno como *Día festivo* si está en la lista de festivos, como *Fin de semana* si es sábado
    o domingo, o como *Día laboral* en los demás casos.
-5. `CalendarioServicio` elimina los días que ya existan para ese año, para que generar el
+6. `CalendarioServicio` elimina los días que ya existan para ese año, para que generar el
    mismo año dos veces no duplique registros, y guarda los nuevos a través de
    `ICalendarioRepositorio`. El borrado y el guardado se ejecutan en una sola transacción
    (`@Transactional`): si el guardado falla, el borrado se revierte y el calendario que
    existía para ese año no se pierde.
-6. `CalendarioRepositorio` transforma los objetos del dominio en `CalendarioEntidad` con
+7. `CalendarioRepositorio` transforma los objetos del dominio en `CalendarioEntidad` con
    `CalendarioMapeador` y los guarda en PostgreSQL con `ICalendarioRepositorioJpa`.
-7. El controlador responde `true` con código 200. Si la API Festivos no responde o falla el
+8. El controlador responde `true` con código 200. Si la API Festivos no responde o falla el
    guardado, responde `false` (ver [Manejo de errores](#manejo-de-errores)).
 
 Listar el calendario recorre el camino inverso: el repositorio JPA consulta los días del
-año, el mapeador los transforma en objetos del dominio y el controlador los serializa a JSON.
+año junto con su tipo (relación `@ManyToOne`), el mapeador los transforma en objetos del
+dominio y el controlador los serializa a JSON.
 
 ## Manejo de errores
 
@@ -177,27 +189,32 @@ año, el mapeador los transforma en objetos del dominio y el controlador los ser
 | Cualquier otro error no previsto | 500 con un `ErrorRespuesta` | `ExcepcionesGlobalesHandler` |
 
 El enunciado pide que generar retorne un booleano, por eso los fallos del proceso se
-informan con `false` y no con una excepción. `ExcepcionesGlobalesHandler` (`@RestControllerAdvice`)
-atiende los errores que ocurren antes o por fuera de ese proceso, y responde siempre con la
-misma estructura, `ErrorRespuesta`.
+informan con `false` y no con una excepción hacia el cliente. Para que la transacción se
+revierta, `CalendarioServicio` no captura el error: la excepción sale del método
+transaccional y `CalendarioControlador` la convierte en `false`.
+`ExcepcionesGlobalesHandler` (`@RestControllerAdvice`) atiende los errores que ocurren antes
+o por fuera de ese proceso, y responde siempre con la misma estructura, `ErrorRespuesta`.
 
 ## Decisiones de diseño
 
 - **La API Festivos es una integración externa.** El core define la interfaz
   `IFestivoServicioExterno` y la llamada HTTP se implementa en la infraestructura, en
   `FestivoServicioExterno`. Si la API Festivos cambia, el servicio no se modifica.
-- **La base de datos y la API Festivos están fuera de la cebolla.** Son sistemas con los que
-  se comunica la infraestructura, no parte de ella.
+- **El cliente, la base de datos y la API Festivos están fuera de la cebolla.** No son
+  módulos de la API: el cliente la consume y la infraestructura se comunica con los otros dos.
 - **`FestivoDto` es un DTO, no una entidad.** Representa cada festivo que entrega la API
   Festivos (`festivo` y `fecha`), no se guarda en la base de datos y solo se usa para
   clasificar los días.
 - **En el dominio, `Calendario` contiene un objeto `Tipo`, no un `IdTipo`.** La llave
   foránea solo existe en la entidad JPA, con `@ManyToOne` y `@JoinColumn`. Por eso la
   respuesta de listar incluye el tipo completo (`"tipo": {"id": 3, "tipo": "Día festivo"}`).
-- **No hay CRUD de `Tipo`.** Es un catálogo fijo de tres registros.
-- **La seguridad por token no se incluye.** El profesor indicó que es opcional para esta
-  API. Por eso, frente al diagrama de ejemplo de la API Monedas, no aparecen la entidad
-  `Usuario`, los componentes de seguridad de la aplicación ni `ConfiguracionSeguridad`.
+- **No hay CRUD de `Tipo`.** Es un catálogo fijo de tres registros que solo se consulta:
+  `CalendarioServicio` lo lee con `ITipoRepositorio` para asignar el tipo a cada día.
+- **La seguridad por token no se incluye.** El enunciado no pide autenticación para esta
+  API: no define una operación de login ni usuarios, y su modelo relacional solo tiene las
+  tablas `Tipo` y `Calendario`. Por eso, frente al diagrama de ejemplo de la API Monedas, no
+  aparecen la entidad `Usuario`, los componentes de seguridad de la aplicación ni
+  `ConfiguracionSeguridad`.
 
 El modelo de la base de datos está en el
 [diagrama relacional](diagrama-relacional-api-calendario.md).

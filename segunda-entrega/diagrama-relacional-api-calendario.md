@@ -1,7 +1,8 @@
 # Diagrama Relacional - API Calendario
 
 Modelo de la base de datos PostgreSQL de la API Calendario (Spring Boot), tomado del
-enunciado del Taller 1.
+enunciado del Taller 1, con una restricción de unicidad adicional sobre `Fecha` que se
+explica más abajo.
 
 La tabla `Tipo` es un catálogo con las clasificaciones posibles de un día, y la tabla
 `Calendario` guarda cada uno de los días de un año con su clasificación.
@@ -22,6 +23,11 @@ erDiagram
         varchar Descripcion
     }
 ```
+
+## Relación y cardinalidad
+
+Un `Tipo` clasifica cero o muchos días de `Calendario` y cada día de `Calendario` tiene
+exactamente un `Tipo`. La llave foránea `Calendario.IdTipo` apunta a `Tipo.Id`.
 
 ## Descripción de las tablas
 
@@ -56,6 +62,15 @@ Un festivo tiene prioridad sobre el fin de semana. Por ejemplo, el 1 de enero de
 cae domingo y se clasifica como *Día festivo* con descripción *Domingo*, tal como aparece
 en la respuesta de ejemplo del enunciado.
 
-La restricción única sobre `Fecha` garantiza en la base de datos que generar el mismo año
-dos veces no duplique días, además del borrado previo que hace la API (ver el
+## Reglas de integridad
+
+| Regla | Dónde se aplica |
+|---|---|
+| `Tipo.Id` y `Calendario.Id` son llaves primarias | Cada registro se identifica de forma única |
+| `Calendario.IdTipo` es llave foránea hacia `Tipo.Id` | Un día solo puede tener un tipo que exista en el catálogo |
+| `Calendario.Fecha` es única | Un mismo día no se puede guardar dos veces |
+
+La restricción única sobre `Fecha` **no aparece en el modelo del enunciado**: se agrega como
+decisión de diseño. Garantiza en la base de datos que generar el mismo año dos veces no
+duplique días, además del borrado previo que hace la API (ver el
 [flujo de generar el calendario](diagrama-arquitectura-api-calendario.md#flujo-de-generar-el-calendario)).
