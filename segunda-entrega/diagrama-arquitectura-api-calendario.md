@@ -66,8 +66,8 @@ graph TD
     end
 
     %% Cliente -> Presentación
-    Cliente -->|"GET /api/calendario/generar/{anio}"| Controladores
-    Cliente -->|"GET /api/calendario/listar/{anio}"| Controladores
+    Cliente -->|"GET /api/calendario<br/>/generar/{anio}"| Controladores
+    Cliente -->|"GET /api/calendario<br/>/listar/{anio}"| Controladores
 
     %% Relaciones Aplicación -> Core / Dominio
     ServiciosApp -.->|Implementa| InterfacesServicio
@@ -87,7 +87,7 @@ graph TD
     IntegracionExt -->|Crea| DTOs
 
     %% Relaciones Infraestructura -> Sistemas externos
-    IntegracionExt -->|"RestTemplate / GET /api/festivos/obtener/{anio}"| APIExterna
+    IntegracionExt -->|"RestTemplate / GET<br/>/api/festivos<br/>/obtener/{anio}"| APIExterna
     RepositoriosJPA -->|Spring Data JPA / SQL| DB
     EntidadesJPA -->|Mapeo ORM @Entity| DB
 
@@ -102,11 +102,11 @@ graph TD
     Handlers -->|Responde con| DtosPresentacion
 
     %% Estilos de los anillos
-    style Exterior fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    style Aplicacion fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
-    style Core fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
-    style Dominio fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
-    style Externos fill:#ffebee,stroke:#d32f2f,stroke-width:2px
+    style Exterior fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+    style Aplicacion fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#000
+    style Core fill:#e1f5fe,stroke:#0288d1,stroke-width:2px,color:#000
+    style Dominio fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    style Externos fill:#ffebee,stroke:#d32f2f,stroke-width:2px,color:#000
 ```
 
 ## Relaciones
@@ -210,11 +210,11 @@ o por fuera de ese proceso, y responde siempre con la misma estructura, `ErrorRe
   respuesta de listar incluye el tipo completo (`"tipo": {"id": 3, "tipo": "Día festivo"}`).
 - **No hay CRUD de `Tipo`.** Es un catálogo fijo de tres registros que solo se consulta:
   `CalendarioServicio` lo lee con `ITipoRepositorio` para asignar el tipo a cada día.
-- **La seguridad por token no se incluye.** El enunciado no pide autenticación para esta
-  API: no define una operación de login ni usuarios, y su modelo relacional solo tiene las
-  tablas `Tipo` y `Calendario`. Por eso, frente al diagrama de ejemplo de la API Monedas, no
-  aparecen la entidad `Usuario`, los componentes de seguridad de la aplicación ni
-  `ConfiguracionSeguridad`.
+- **La seguridad por token no se incluye.** El profesor indicó en clase que es opcional
+  para esta API, y el enunciado tampoco define una operación de login ni usuarios: su
+  modelo relacional solo tiene las tablas `Tipo` y `Calendario`. Por eso, frente al
+  diagrama de ejemplo de la API Monedas, no aparecen la entidad `Usuario`, los
+  componentes de seguridad de la aplicación ni `ConfiguracionSeguridad`.
 
 El modelo de la base de datos está en el
 [diagrama relacional](diagrama-relacional-api-calendario.md).
