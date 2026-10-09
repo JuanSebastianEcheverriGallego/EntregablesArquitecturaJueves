@@ -11,8 +11,8 @@ ninguna sale de ellos.
 
 En el diagrama, cada módulo está dentro del anillo al que pertenece: el dominio dentro del
 core, el core dentro de la aplicación, y la infraestructura y la presentación en el anillo
-exterior. El cliente, la base de datos y la API Festivos quedan por fuera de la cebolla
-porque no son módulos de la API: el cliente la consume, y la infraestructura se comunica
+exterior. El consumidor de la API, la base de datos y la API Festivos quedan por fuera de la cebolla
+porque no son módulos de la API: el consumidor la usa, y la infraestructura se comunica
 con la base de datos y con la API Festivos.
 
 ```mermaid
@@ -58,16 +58,16 @@ graph TD
         end
     end
 
-    %% Fuera de la API: cliente y sistemas externos
+    %% Fuera de la API: consumidor y sistemas externos
     subgraph Externos [Fuera de la API]
-        Cliente[Cliente<br/><i>Postman / Swagger UI</i>]
+        Consumidor[Consumidor de la API<br/><i>Postman / Swagger UI</i>]
         DB[(Base de Datos: PostgreSQL)]
         APIExterna[API Festivos]
     end
 
-    %% Cliente -> Presentación
-    Cliente -->|"GET /api/calendario<br/>/generar/{anio}"| Controladores
-    Cliente -->|"GET /api/calendario<br/>/listar/{anio}"| Controladores
+    %% Consumidor -> Presentación
+    Consumidor -->|"GET /api/calendario<br/>/generar/{anio}"| Controladores
+    Consumidor -->|"GET /api/calendario<br/>/listar/{anio}"| Controladores
 
     %% Relaciones Aplicación -> Core / Dominio
     ServiciosApp -.->|Implementa| InterfacesServicio
@@ -113,7 +113,7 @@ graph TD
 
 | Relación | Línea | Significado |
 |---|---|---|
-| GET con una ruta | continua | Petición HTTP: del cliente al controlador, y de la integración a la API Festivos. La respuesta recorre el camino inverso |
+| GET con una ruta | continua | Petición HTTP: del consumidor al controlador, y de la integración a la API Festivos. La respuesta recorre el camino inverso |
 | Implementa | punteada | La clase implementa una interfaz definida en el core. No es un llamado directo |
 | Inyecta | continua | La clase recibe por inyección de dependencias una instancia que crea Spring (`@Autowired`) |
 | Maneja / Usa | continua | La clase trabaja con objetos del dominio o DTOs, que fluyen por todos los módulos |
@@ -153,7 +153,7 @@ Generar usa `GET`, como en la solicitud de ejemplo del enunciado, aunque guarda 
 
 ## Flujo de generar el calendario
 
-1. El cliente llama `GET /api/calendario/generar/{anio}`.
+1. El consumidor llama `GET /api/calendario/generar/{anio}`.
 2. `CalendarioControlador` invoca `ICalendarioServicio`. Spring inyecta la implementación
    `CalendarioServicio`.
 3. `CalendarioServicio` pide los festivos del año a `IFestivoServicioExterno`. Su
@@ -189,7 +189,7 @@ dominio y el controlador los serializa a JSON.
 | Cualquier otro error no previsto | 500 con un `ErrorRespuesta` | `ExcepcionesGlobalesHandler` |
 
 El enunciado pide que generar retorne un booleano, por eso los fallos del proceso se
-informan con `false` y no con una excepción hacia el cliente. Para que la transacción se
+informan con `false` y no con una excepción hacia el consumidor. Para que la transacción se
 revierta, `CalendarioServicio` no captura el error: la excepción sale del método
 transaccional y `CalendarioControlador` la convierte en `false`.
 `ExcepcionesGlobalesHandler` (`@RestControllerAdvice`) atiende los errores que ocurren antes
@@ -200,8 +200,13 @@ o por fuera de ese proceso, y responde siempre con la misma estructura, `ErrorRe
 - **La API Festivos es una integración externa.** El core define la interfaz
   `IFestivoServicioExterno` y la llamada HTTP se implementa en la infraestructura, en
   `FestivoServicioExterno`. Si la API Festivos cambia, el servicio no se modifica.
-- **El cliente, la base de datos y la API Festivos están fuera de la cebolla.** No son
-  módulos de la API: el cliente la consume y la infraestructura se comunica con los otros dos.
+- **El consumidor, la base de datos y la API Festivos están fuera de la cebolla.** No son
+  módulos de la API. El nodo "Consumidor de la API" (Postman o Swagger UI) representa a
+  quien llama a la API Calendario y se dibuja para mostrar por dónde entran las peticiones
+  y qué rutas se exponen. No es la API Festivos: la API Calendario es la que actúa como
+  cliente de la API Festivos y le consulta los festivos, mientras que al consumidor se le
+  responde directamente desde la API Calendario, no a través de la API Festivos. La infraestructura es la que se comunica
+  con la base de datos y con la API Festivos.
 - **`FestivoDto` es un DTO, no una entidad.** Representa cada festivo que entrega la API
   Festivos (`festivo` y `fecha`), no se guarda en la base de datos y solo se usa para
   clasificar los días.
