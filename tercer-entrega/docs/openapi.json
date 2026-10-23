@@ -168,8 +168,8 @@
       "FechaFestiva": {
         "type": "object",
         "properties": {
-          "fecha": { "type": "string", "format": "date", "example": "2026-01-01" },
-          "nombre": { "type": "string", "example": "Año nuevo" }
+          "festivo": { "type": "string", "example": "Año nuevo" },
+          "fecha": { "type": "string", "format": "date", "example": "2026-01-01" }
         }
       },
       "Mensaje": {
