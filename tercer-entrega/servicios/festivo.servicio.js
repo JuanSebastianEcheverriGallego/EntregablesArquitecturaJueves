@@ -119,7 +119,7 @@ exports.obtenerFestivosAnio = async (anio) => {
             const fecha = calcularFecha(tipo.id, festivo, anio, domingoPascua);
             //Un traslado al lunes desde finales de diciembre podria salirse del anio
             if (fecha.getUTCFullYear() === anio) {
-                festivos.push({ fecha: fechaServicio.formatear(fecha), nombre: festivo.nombre });
+                festivos.push({ festivo: festivo.nombre, fecha: fechaServicio.formatear(fecha) });
             }
         }
     }
