@@ -119,7 +119,7 @@ curl http://localhost:3030/api/festivos/obtener/2026
 ```
 
 ```json
-[{"fecha":"2026-01-01","nombre":"Año nuevo"},{"fecha":"2026-01-12","nombre":"Santos Reyes"}, ...]
+[{"festivo":"Año nuevo","fecha":"2026-01-01"},{"festivo":"Santos Reyes","fecha":"2026-01-12"}, ...]
 ```
 
 ## Reglas de negocio
