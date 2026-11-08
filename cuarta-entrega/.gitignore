@@ -1,0 +1,28 @@
+# Compilación de Maven (clases, .jar generados y reportes de pruebas)
+target/
+# El wrapper descarga Maven por su cuenta: el .jar no se versiona
+.mvn/wrapper/maven-wrapper.jar
+
+# Logs y variables de entorno locales (pueden tener claves)
+*.log
+.env
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# VS Code y Eclipse (la extensión de Java de VS Code genera los archivos de Eclipse)
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+.apt_generated/
+bin/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
