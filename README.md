@@ -46,4 +46,15 @@ festivos de un año que consume la API Calendario. Las instrucciones de ejecuci�
 operaciones están en su [README](tercer-entrega/README.md), y la documentación interactiva
 queda en Swagger UI (`/api-docs`).
 
+## Cuarta entrega (API Calendario: API Springboot + BD PostgreSQL)
+
+Implementación de la **API Calendario** modelada en la segunda entrega, con arquitectura
+onion multimódulo (dominio, core, aplicacion, infraestructura y presentacion) sobre las
+tablas `Tipo` y `Calendario` de PostgreSQL. Carpeta [cuarta-entrega](cuarta-entrega/).
+
+Genera y lista el calendario laboral de un año consumiendo la API Festivos de la tercera
+entrega, e incluye el CRUD de los tipos de día. Las instrucciones de ejecución y las
+operaciones están en su [README](cuarta-entrega/README.md), y la documentación interactiva
+queda en Swagger UI (`/swagger-ui.html`).
+
 Los diagramas de la primera y segunda entrega están escritos en Mermaid y se renderizan directamente en GitHub.
