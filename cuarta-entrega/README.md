@@ -4,7 +4,8 @@ Implementación de la **API Calendario** diseñada en la [segunda entrega](../se
 API RESTful en Spring Boot sobre PostgreSQL con arquitectura onion multimódulo. Genera el
 calendario laboral de un año, clasifica cada día como *Día laboral*, *Fin de semana* o *Día
 festivo* y lo guarda en la base de datos. Es cliente de la
-[API Festivos](../tercer-entrega/), de la que obtiene los festivos del año.
+[API Festivos](../tercer-entrega/), de la que obtiene los festivos del año, por tanto tenemos una
+Integración entre las dos APIS
 
 ## Requisitos
 
