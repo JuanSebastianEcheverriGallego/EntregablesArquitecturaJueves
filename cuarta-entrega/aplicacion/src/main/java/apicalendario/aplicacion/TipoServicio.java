@@ -62,6 +62,13 @@ public class TipoServicio implements ITipoServicio {
     @Override
     public boolean eliminar(int id) {
         obtener(id);
+        // La generación del calendario asigna los tipos por estos ids. Si se eliminaran,
+        // un tipo agregado de nuevo recibiría otro id y generar fallaría siempre.
+        if (id == CalendarioServicio.DIA_LABORAL || id == CalendarioServicio.FIN_DE_SEMANA
+                || id == CalendarioServicio.DIA_FESTIVO) {
+            throw new DatosNoValidosExcepcion(
+                    "El tipo con id=" + id + " lo usa la generación del calendario y no se puede eliminar");
+        }
         return repositorio.eliminar(id);
     }
 

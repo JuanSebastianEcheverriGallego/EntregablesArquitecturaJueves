@@ -190,14 +190,14 @@ CRUD del catálogo de tipos, para administrarlo desde la API sin modificar la ba
 | Buscar tipos por nombre | GET | `/api/tipos/buscar/{nombre}` | 200 con los tipos cuyo nombre contiene el texto |
 | Agregar un tipo | POST | `/api/tipos/agregar` | 201 con el tipo creado (el `id` lo asigna la base de datos) |
 | Modificar un tipo | PUT | `/api/tipos/modificar` | 200 con el tipo modificado, o 404 |
-| Eliminar un tipo | DELETE | `/api/tipos/eliminar/{id}` | 200 con `true`, 404 si no existe o 409 si hay días del calendario con ese tipo |
+| Eliminar un tipo | DELETE | `/api/tipos/eliminar/{id}` | 200 con `true`, 400 si es uno de los tipos 1 a 3, 404 si no existe o 409 si hay días del calendario con ese tipo |
 
 ### Errores
 
 | Situación | Respuesta |
 |---|---|
 | Un parámetro numérico no es un número (por ejemplo `/listar/abc`) | 400 |
-| Nombre de tipo vacío o cuerpo JSON mal formado | 400 |
+| Nombre de tipo vacío, cuerpo JSON mal formado o eliminar uno de los tipos 1 a 3 | 400 |
 | Tipo que no existe | 404 |
 | Nombre de tipo repetido, o eliminar un tipo en uso | 409 |
 | Error no previsto | 500 |
@@ -257,9 +257,10 @@ curl -X PUT http://localhost:8080/api/tipos/modificar \
   responde o el guardado falla, el calendario que existía para ese año se conserva. Además,
   la base de datos impide con un índice único que una fecha se guarde dos veces.
 - **Ids del catálogo.** La generación asigna los tipos por su `id`: 1 *Día laboral*, 2 *Fin
-  de semana* y 3 *Día festivo*. Se pueden renombrar desde la API, pero si se elimina uno de
-  ellos, generar responde `false`. Mientras haya días del calendario con un tipo, ese tipo no
-  se puede eliminar.
+  de semana* y 3 *Día festivo*. Se pueden renombrar desde la API, pero no eliminar (responde
+  400): si se eliminaran, un tipo agregado de nuevo recibiría otro `id` y generar fallaría
+  hasta corregir la base de datos a mano. Los demás tipos tampoco se pueden eliminar mientras
+  haya días del calendario con ese tipo.
 
 ## Cambios frente al diseño de la segunda entrega
 

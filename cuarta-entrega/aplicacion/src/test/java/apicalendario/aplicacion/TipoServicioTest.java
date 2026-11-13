@@ -43,4 +43,12 @@ class TipoServicioTest {
         assertThrows(EntidadNoEncontradaExcepcion.class, () -> servicio.modificar(new Tipo(99, "Otro")));
         assertThrows(EntidadNoEncontradaExcepcion.class, () -> servicio.eliminar(99));
     }
+
+    @Test
+    void losTiposQueUsaLaGeneracionNoSePuedenEliminar() {
+        assertThrows(DatosNoValidosExcepcion.class, () -> servicio.eliminar(CalendarioServicio.DIA_LABORAL));
+        assertThrows(DatosNoValidosExcepcion.class, () -> servicio.eliminar(CalendarioServicio.FIN_DE_SEMANA));
+        assertThrows(DatosNoValidosExcepcion.class, () -> servicio.eliminar(CalendarioServicio.DIA_FESTIVO));
+        assertEquals(3, servicio.listar().size());
+    }
 }
