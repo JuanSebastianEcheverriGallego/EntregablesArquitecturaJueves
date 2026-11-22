@@ -57,4 +57,15 @@ entrega, e incluye el CRUD de los tipos de día. Las instrucciones de ejecución
 operaciones están en su [README](cuarta-entrega/README.md), y la documentación interactiva
 queda en Swagger UI (`/swagger-ui.html`).
 
-Los diagramas de la primera y segunda entrega están escritos en Mermaid y se renderizan directamente en GitHub.
+## Quinta entrega (Contenerización con Docker)
+
+Despliegue en contenedores Docker de la **API Festivos** y la **API Calendario**, cada una con
+su base de datos (MongoDB y PostgreSQL). Carpeta [quinta-entrega](quinta-entrega/).
+
+Los cuatro contenedores se orquestan con un `docker-compose.yml` sobre una red común, en la
+que la API Calendario llama a la API Festivos por el nombre de su contenedor. La carpeta es
+autocontenida: trae el código de las dos APIs, sus Dockerfiles y los scripts de las bases de
+datos, y todo se levanta con `docker compose up --build`. Las instrucciones, el diagrama de
+despliegue y la configuración están en su [README](quinta-entrega/README.md).
+
+Los diagramas de la primera, segunda y quinta entrega están escritos en Mermaid y se renderizan directamente en GitHub.

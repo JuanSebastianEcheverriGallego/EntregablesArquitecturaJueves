@@ -1,0 +1,112 @@
+# Despliegue completo del sistema: API Festivos + API Calendario, cada una con su base de datos.
+# Uso, desde la carpeta quinta-entrega:
+#   docker compose up --build      levanta los 4 contenedores
+#   docker compose down -v         los elimina junto con los volúmenes de datos
+name: quinta-entrega
+
+services:
+
+  # Base de datos de la API Festivos. La imagen se construye con el script de datos
+  # bd/BDFestivos.js, que se carga solo la primera vez (volumen vacío)
+  bdfestivos:
+    build: ./api-festivos/bd
+    image: dockerbdfestivos
+    container_name: dockerbdfestivos
+    volumes:
+      - datos-festivos:/data/db
+    networks:
+      - red-calendario
+    healthcheck:
+      # Sana cuando el servidor definitivo responde por la red del contenedor (no el
+      # temporal que usa la imagen para cargar el script, que solo escucha en 127.0.0.1)
+      # y la colección tipos ya tiene los datos
+      test: ["CMD-SHELL", "mongosh --quiet --host \"$$(hostname)\" festivos --eval 'quit(db.tipos.countDocuments() > 0 ? 0 : 1)'"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 20s
+
+  # API Festivos (Node.js + Express)
+  apifestivos:
+    build: ./api-festivos
+    image: dockerapifestivos
+    container_name: dockerapifestivos
+    environment:
+      PUERTO: 3030
+      BD_SERVIDOR: dockerbdfestivos   # nombre del contenedor de MongoDB en la red, no localhost
+      BD_PUERTO: 27017
+      BD_BASEDATOS: festivos
+    ports:
+      - "3030:3030"
+    networks:
+      - red-calendario
+    depends_on:
+      bdfestivos:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      # La imagen alpine trae wget. Sana cuando la API responde consultando la BD
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:3030/api/festivos || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  # Base de datos de la API Calendario. La imagen se construye con los scripts
+  # bd/DDL_Calendario.sql y bd/DML_Calendario.sql, que se cargan solo la primera vez
+  bdcalendario:
+    build: ./api-calendario/bd
+    image: dockerbdcalendario
+    container_name: dockerbdcalendario
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: sa
+      # No se define POSTGRES_DB: el DDL crea la base de datos calendario y, si ya
+      # existiera, el CREATE DATABASE fallaría y se detendría la carga de los scripts
+    volumes:
+      - datos-calendario:/var/lib/postgresql/data
+    networks:
+      - red-calendario
+    healthcheck:
+      # Con -h localhost se pregunta por TCP: mientras la imagen corre los scripts, el
+      # servidor temporal no escucha por TCP, así que solo queda sano al terminar la carga
+      test: ["CMD-SHELL", "pg_isready -h localhost -U postgres -d calendario"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  # API Calendario (Spring Boot). Es cliente de la API Festivos
+  apicalendario:
+    build: ./api-calendario
+    image: dockerapicalendario
+    container_name: dockerapicalendario
+    environment:
+      PUERTO: 8080
+      BD_SERVIDOR: dockerbdcalendario  # nombre del contenedor de PostgreSQL en la red
+      BD_PUERTO: 5432
+      BD_BASEDATOS: calendario
+      BD_USUARIO: postgres
+      BD_CLAVE: sa
+      # La API Festivos se llama por el nombre de su contenedor dentro de la red
+      API_FESTIVOS_URL: http://dockerapifestivos:3030
+    ports:
+      - "8080:8080"
+    networks:
+      - red-calendario
+    depends_on:
+      bdcalendario:
+        condition: service_healthy
+      apifestivos:
+        condition: service_healthy
+    restart: on-failure
+
+# Red común: dentro de ella cada contenedor encuentra a los demás por su nombre
+networks:
+  red-calendario:
+    name: red-calendario
+
+# Volúmenes con los datos de las bases de datos (se borran con docker compose down -v)
+volumes:
+  datos-festivos:
+  datos-calendario:
